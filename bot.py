@@ -42,23 +42,18 @@ async def on_member_join(member):
 async def verify_new_member(member):
     guild = member.guild
     channel = guild.get_channel(VERIFICATION_CHANNEL_ID)
-
     if not channel:
         print("❌ Verification channel missing")
         return
 
     try:
-        # Only messages after member joined
-        messages = []
-        async for m in channel.history(after=member.joined_at, limit=50):
-            messages.append(m)
-
+        # Get last 50 messages in verification channel
+        messages = [m async for m in channel.history(limit=50)]
+        # Filter messages by this user (no join time filtering)
         user_messages = [m for m in messages if m.author.id == member.id]
-
         if not user_messages:
-            print(f"ℹ No recent messages from {member.display_name} after joining")
+            print(f"ℹ No messages from {member.display_name}")
             return
-
         latest_message = user_messages[0]  # Most recent message
         nickname = latest_message.content.strip()
 
@@ -136,7 +131,7 @@ async def command_error(interaction: discord.Interaction, error):
         await interaction.response.send_message(f"❌ Error: {str(error)}", ephemeral=True)
 
 # Keep Alive
-import keep_alive  # your keep_alive.py file with flask server for uptimerobot
+import keep_alive  # your keep_alive.py for uptime robot
 keep_alive.keep_alive()
 
 import os
