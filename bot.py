@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import datetime
+import discord.utils
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -47,20 +48,24 @@ async def verify_new_member(member):
         return
 
     try:
-        # Get last 50 messages in verification channel
-        messages = [m async for m in channel.history(limit=50)]
-        # Filter messages by this user (no join time filtering)
-        user_messages = [m for m in messages if m.author.id == member.id]
-        if not user_messages:
-            print(f"ℹ No messages from {member.display_name}")
+        messages = []
+        async for m in channel.history(limit=100):
+            # Only messages from user sent at or after join time
+            if m.author.id == member.id and m.created_at >= member.joined_at:
+                messages.append(m)
+
+        if not messages:
+            print(f"ℹ No messages from {member.display_name} after joining")
             return
-        latest_message = user_messages[0]  # Most recent message
+
+        latest_message = max(messages, key=lambda m: m.created_at)
         nickname = latest_message.content.strip()
 
         if nickname not in USERS_LIST:
             print(f"❌ {nickname} not in UsersList.txt")
             return
 
+        # Check if nickname already used
         for m in guild.members:
             if m.nick == nickname or m.name == nickname:
                 print(f"❌ Nickname {nickname} already in use")
